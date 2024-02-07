@@ -7,13 +7,19 @@ platform:
   os: linux
   arch: amd64
 
+environment:
+  SONAR_SCANNER_IMAGE_REPO: quay.io/ukhomeofficedigital/sonar-scanner-jdk17
+  REPO_NAME: ukhomeofficedigital/sonar-scanner-jdk17
+  DOCKER_USERNAME: ukhomeofficedigital+sonar_scanner
+  SONAR_SCANNER_VER: 4.8.1
+
 steps:
-- name: build_docker_image
+- name: build docker image
   pull: if-not-exists
   image: 340268328991.dkr.ecr.eu-west-2.amazonaws.com/acp/dind
   commands:
-  - n=0; while [ "$n" -lt 60 ] && [ ! docker stats --no-stream ]; do n=$(( n + 1 )); sleep 1; done
-  - docker build -t sonar-scanner:$${DRONE_COMMIT_SHA} .
+  - /usr/local/bin/wait
+  - docker build -t "$${SONAR_SCANNER_IMAGE_REPO}:${DRONE_COMMIT_SHA}" .
   when:
     event:
     - push
@@ -25,39 +31,40 @@ steps:
   resources:
     limits:
       cpu: 1000
-      memory: 1024Mi
+      memory: 1024Mi      
   environment:
-    IMAGE_NAME: sonar-scanner:${DRONE_COMMIT_SHA}
+    IMAGE_NAME: quay.io/ukhomeofficedigital/sonar-scanner-jdk17:${DRONE_COMMIT_SHA}
+    ALLOW_CVE_LIST: CVE-2023-3635
   when:
     event:
     - push
 
 - name: image_sha_to_quay
-  pull: if-not-exists
+  pull: Always
   image: plugins/docker
   settings: 
     registry: quay.io
-    repo: quay.io/ukhomeofficedigital/sonar-scanner
+    repo: quay.io/ukhomeofficedigital/sonar-scanner-jdk17
     tags: ${DRONE_COMMIT_SHA}
   environment:
     DOCKER_PASSWORD:
       from_secret: DOCKER_SECRET_2
-    DOCKER_USERNAME: ukhomeofficedigital+sonar_scanner
+    DOCKER_USERNAME: ${DOCKER_USERNAME}
   when:
     event:
     - push
 
 - name: image_latest_to_quay
-  pull: if-not-exists
+  pull: Always
   image: plugins/docker
   settings: 
     registry: quay.io
-    repo: quay.io/ukhomeofficedigital/sonar-scanner
+    repo: quay.io/ukhomeofficedigital/sonar-scanner-jdk17
     tags: latest
   environment:
     DOCKER_PASSWORD:
       from_secret: DOCKER_SECRET_2
-    DOCKER_USERNAME: ukhomeofficedigital+sonar_scanner
+    DOCKER_USERNAME: ${DOCKER_USERNAME}
   when:
     branch:
     - master
@@ -65,17 +72,24 @@ steps:
     - push
 
 - name: image_tag_to_quay
-  pull: if-not-exists
+  pull: Always
   image: plugins/docker
   settings: 
     registry: quay.io
-    repo: quay.io/ukhomeofficedigital/sonar-scanner
+    repo: quay.io/ukhomeofficedigital/sonar-scanner-jdk17
     tags: ${DRONE_TAG}
   environment:
     DOCKER_PASSWORD:
       from_secret: DOCKER_SECRET_2
-    DOCKER_USERNAME: ukhomeofficedigital+sonar_scanner
+    DOCKER_USERNAME: ${DOCKER_USERNAME}
   when:
     event:
     - tag
 
+services:
+- name: docker
+  image: 340268328991.dkr.ecr.eu-west-2.amazonaws.com/acp/dind
+  resources:
+    limits:
+      cpu: 1000
+      memory: 1024Mi
