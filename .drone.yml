@@ -1,0 +1,81 @@
+---
+kind: pipeline
+name: default
+type: kubernetes
+
+platform:
+  os: linux
+  arch: amd64
+
+steps:
+- name: build_docker_image
+  pull: if-not-exists
+  image: 340268328991.dkr.ecr.eu-west-2.amazonaws.com/acp/dind
+  commands:
+  - n=0; while [ "$n" -lt 60 ] && [ ! docker stats --no-stream ]; do n=$(( n + 1 )); sleep 1; done
+  - docker build -t sonar-scanner:$${DRONE_COMMIT_SHA} .
+  when:
+    event:
+    - push
+    - tag
+
+- name: scan_image
+  pull: if-not-exists
+  image: 340268328991.dkr.ecr.eu-west-2.amazonaws.com/acp/trivy/client:latest
+  resources:
+    limits:
+      cpu: 1000
+      memory: 1024Mi
+  environment:
+    IMAGE_NAME: sonar-scanner:${DRONE_COMMIT_SHA}
+  when:
+    event:
+    - push
+
+- name: image_sha_to_quay
+  pull: if-not-exists
+  image: plugins/docker
+  settings: 
+    registry: quay.io
+    repo: quay.io/ukhomeofficedigital/sonar-scanner
+    tags: ${DRONE_COMMIT_SHA}
+  environment:
+    DOCKER_PASSWORD:
+      from_secret: DOCKER_SECRET_2
+    DOCKER_USERNAME: ukhomeofficedigital+sonar_scanner
+  when:
+    event:
+    - push
+
+- name: image_latest_to_quay
+  pull: if-not-exists
+  image: plugins/docker
+  settings: 
+    registry: quay.io
+    repo: quay.io/ukhomeofficedigital/sonar-scanner
+    tags: latest
+  environment:
+    DOCKER_PASSWORD:
+      from_secret: DOCKER_SECRET_2
+    DOCKER_USERNAME: ukhomeofficedigital+sonar_scanner
+  when:
+    branch:
+    - master
+    event:
+    - push
+
+- name: image_tag_to_quay
+  pull: if-not-exists
+  image: plugins/docker
+  settings: 
+    registry: quay.io
+    repo: quay.io/ukhomeofficedigital/sonar-scanner
+    tags: ${DRONE_TAG}
+  environment:
+    DOCKER_PASSWORD:
+      from_secret: DOCKER_SECRET_2
+    DOCKER_USERNAME: ukhomeofficedigital+sonar_scanner
+  when:
+    event:
+    - tag
+
