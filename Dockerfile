@@ -1,6 +1,6 @@
 FROM quay.io/ukhomeofficedigital/aws-alpine-jdk17:v17.0.10
 ENV SONAR_SCANNER_VER=4.8.1.3023
-ENV SONAR_SCANNER_OPTS="-Xmx512m -Dsonar.host.url=https://sonarqube.digital.homeoffice.gov.uk/"
+ENV SONAR_SCANNER_OPTS="-Xmx512m -Dsonar.host.url=https://sonarqube.testing.acp.homeoffice.gov.uk/"
 ENV PATH=/opt/sonar-scanner-${SONAR_SCANNER_VER}/bin:${PATH}
 
 ENV  LANG en_US.UTF-8
