@@ -1,9 +1,9 @@
 # docker-sonar-scanner-jdk14
-This repo is for docker scanner with jdk14
+This repo is for docker scanner with jdk17 
 
 # docker-sonar-scanner
 
-Enables integration with SonarQube.
+Enables integration with SonarQube 9.9.
 
 ### Usage
 
@@ -17,4 +17,3 @@ Insert the snippet below after your build step in your .drone.yml, copy the sona
         - push
         - pull_request
 ```
-
